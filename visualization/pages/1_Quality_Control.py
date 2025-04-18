@@ -246,8 +246,12 @@ for (dir_name, base_name), group_df in grouped:
                 
                 if row['ext'] == 'png':
                     # Always show PNG if it exists
-                    st.image(os.path.join(ROOT_DIR, row['file_path']), 
-                            caption=f"{row['metric_name']} - {row['well_id']}")
+                    try:
+                        st.image(os.path.join(ROOT_DIR, row['file_path']), 
+                                caption=f"{row['metric_name']} - {row['well_id']}")
+                    except Exception as e:
+                        st.error(f"Could not load image: {row['file_path']}")
+                        st.error(str(e))
                     
                     # If there's a corresponding TSV, add download link
                     if has_tsv:

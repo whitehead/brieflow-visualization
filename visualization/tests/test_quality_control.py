@@ -1,8 +1,10 @@
 import pytest
+import os
 from streamlit.testing.v1 import AppTest
 
 def test_quality_control_page_loads():
     """Test that the Quality Control page loads without errors."""
+    os.environ["BRIEFLOW_ANALYSIS_ROOT"] = "tests/fixtures/analysis_root"
     at = AppTest.from_file("pages/1_Quality_Control.py")
     at.run(timeout=10)
     
