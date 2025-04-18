@@ -3,6 +3,7 @@ import pandas as pd
 import glob
 import os
 import re
+import uuid
 
 st.set_page_config(
     page_title="Quality Control - Brieflow Analysis",
@@ -243,7 +244,7 @@ for (dir_name, base_name), group_df in grouped:
                                 label="Download TSV data",
                                 data=f,
                                 file_name=os.path.basename(tsv_path),
-                                mime="text/tab-separated-values"
+                                key=f"download_{str(uuid.uuid4())}"
                             )
                 
                 elif row['ext'] == 'tsv' and not has_png:
