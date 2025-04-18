@@ -9,7 +9,10 @@ This project provides a Streamlit-based interface for interactive exploration of
 - `analysis_root/` — Symlink to analysis data (We expect this to contain sbs, phenotype, merge, and cluster folders)
 - `visualization/` — The streamlit application
   - `Home.py` — The entry point for the streamlit application
-  - `pages/` — (Optional) Additional Streamlit pages
+  - `pages/` — Additional Streamlit pages
+    - `1_Quality_Control.py` — Interactive visualization of pipeline QC metrics and filtering
+    - `2_Cluster.py` — PHATE and Leiden clustering analysis visualization
+    - `3_Config.py` — System configuration and git repository information
 
 ## Setup
 
