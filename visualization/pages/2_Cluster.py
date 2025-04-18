@@ -5,8 +5,13 @@ import os
 import plotly.express as px
 import plotly.graph_objects as go
 
+from src.filesystem import FileSystem
+from src.rendering import VisualizationRenderer
+from src.filtering import create_filter_radio, apply_filter
+
 # =====================
 # CONSTANTS
+ANALYSIS_ROOT = os.getenv('BRIEFLOW_ANALYSIS_ROOT', '../analysis_root')
 
 # Common hover data columns
 HOVER_COLUMNS = ['gene_symbol_0', 'cluster', 'Gene Names', 'source']
@@ -20,12 +25,13 @@ SOURCE_INDEX = 3
 # =====================
 # FUNCTIONS
 
+
+
 # Load and merge cluster TSV files
 @st.cache_data
 def load_cluster_data():
     # Find all relevant TSV files
-    analysis_root = os.getenv('BRIEFLOW_ANALYSIS_ROOT', '../analysis_root')
-    tsv_files = glob.glob(f"{analysis_root}/cluster/**/*__phate_leiden_uniprot.tsv", recursive=True)
+    tsv_files = glob.glob(f"{ANALYSIS_ROOT}/cluster/**/*__phate_leiden_uniprot.tsv", recursive=True)
     
     # Read each file and add source attribute
     dfs = []
@@ -238,3 +244,31 @@ if not cluster_data.empty:
         st.dataframe(cluster_data)
 else:
     st.write("No cluster data files found.")
+
+# Plots and tables
+st.write("Plots and Tables")
+st.sidebar.title("Filters")
+
+@st.cache_data
+def load_plots_and_tables_data():
+    cluster_plots_dir = os.path.join(ANALYSIS_ROOT,'cluster')
+    cluster_plot_files = FileSystem.find_files(cluster_plots_dir, include_all=['plots'], extensions=['png', 'tsv'])
+
+    filtered_df = FileSystem.extract_features(cluster_plots_dir, cluster_plot_files)
+    return filtered_df, cluster_plots_dir
+
+filtered_df, cluster_plots_dir = load_plots_and_tables_data()
+
+selected_dir_level_0 = create_filter_radio(filtered_df, 'dir_level_0', st.sidebar, "A")
+filtered_df = apply_filter(filtered_df, 'dir_level_0', selected_dir_level_0)
+
+selected_dir_level_1 = create_filter_radio(filtered_df, 'dir_level_1', st.sidebar, "B")
+filtered_df = apply_filter(filtered_df, 'dir_level_1', selected_dir_level_1)
+
+#selected_dir_level_2 = create_filter_radio(filtered_df, 'dir_level_2', st.sidebar, "C")
+#filtered_df = apply_filter(filtered_df, 'dir_level_2', selected_dir_level_2)
+
+selected_metric = create_filter_radio(filtered_df, 'metric_name', st.sidebar, "Metric")
+filtered_df = apply_filter(filtered_df, 'metric_name', selected_metric)
+
+VisualizationRenderer.display_plots_and_tables(filtered_df, cluster_plots_dir)
