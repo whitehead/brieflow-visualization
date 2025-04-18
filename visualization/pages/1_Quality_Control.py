@@ -38,7 +38,7 @@ def find_eval_files(root_dir):
 
 
 def extract_well_id(file_path):
-    """
+    r"""
     Extract well identifier (format: W-[A-Z]\d+) from a file path.
 
     Args:
@@ -52,7 +52,7 @@ def extract_well_id(file_path):
 
 
 def extract_plate_id(file_path):
-    """
+    r"""
     Extract plate identifier (format: P-\d+) from a file path.
 
     Args:
