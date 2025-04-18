@@ -184,7 +184,16 @@ filtered_df = filtered_df[filtered_df['dir_level_0'].isin(valid_level_0)]
 
 
 # Create columns for filters
-col1, col2, col3, col4, col5 = st.columns(5)
+SIDE_BAR_FILTERS = True
+if SIDE_BAR_FILTERS:
+    st.sidebar.title("Filters")
+    col1 = st.sidebar
+    col2 = st.sidebar
+    col3 = st.sidebar
+    col4 = st.sidebar
+    col5 = st.sidebar
+else:
+    col1, col2, col3, col4, col5 = st.columns(5)
 
 # Create filters using the helper function
 selected_dir_level_0 = create_filter_radio(filtered_df, 'dir_level_0', col1)
