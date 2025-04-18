@@ -7,17 +7,19 @@ class FileSystem:
     """
     Utility class for file system operations related to evaluation files.
     """
-    
+
     @staticmethod
-    def find_eval_files(root_dir):
+    def find_eval_files(root_dir, include_any=None, include_all=None):
         """
-        Find all PNG and TSV files in the directory tree that contain 'eval' in their path.
+        Find all PNG and TSV files in the directory tree with optional path filtering.
 
         Args:
             root_dir: The root directory to search in
+            includes_any: List of strings where if the path includes any of the values, it is included
+            include_all: List of strings where the path must include each and every element
 
         Returns:
-            A list of file paths that contain 'eval' in their path
+            A list of file paths that match the filtering criteria
         """
         # Find all PNG and TSV files in the directory tree
         png_files = glob.glob(f"{root_dir}/**/*.png", recursive=True)
@@ -26,11 +28,21 @@ class FileSystem:
         # Combine the lists
         all_files = png_files + tsv_files
 
-        # Filter for files containing "eval" in their path (not just basename)
-        eval_files = [f for f in all_files if "eval" in f]
+        # Apply filtering if specified
+        filtered_files = all_files
+
+        # Filter for paths that include any of the specified strings
+        if include_any and len(include_any) > 0:
+            filtered_files = [f for f in filtered_files if
+                              any(item in os.path.normpath(f).split(os.sep) for item in include_any)]
+
+        # Filter for paths that include all of the specified strings
+        if include_all and len(include_all) > 0:
+            filtered_files = [f for f in filtered_files if
+                              all(item in os.path.normpath(f).split(os.sep) for item in include_all)]
 
         # Return the array of matching file paths
-        return eval_files
+        return filtered_files
 
     @staticmethod
     def extract_well_id(file_path):
@@ -77,7 +89,7 @@ class FileSystem:
         return None
 
     @staticmethod
-    def extract_features(root_dir, files, omit_folders=None):
+    def extract_features(root_dir, files):
         """
         Extract features from PNG and TSV files including path information.
 
@@ -89,9 +101,6 @@ class FileSystem:
         Returns:
             DataFrame containing extracted features and path information
         """
-        if omit_folders is None:
-            omit_folders = {'eval'}
-
         features = []
 
         for file in files:
@@ -116,7 +125,6 @@ class FileSystem:
 
             # Add directory levels, skipping omitted folders
             parts = dirname.split(os.sep)
-            parts = [part for part in parts if part not in omit_folders]  # Filter out omitted parts
             for i, part in enumerate(parts):
                 feature[f'dir_level_{i}'] = part
             features.append(feature)

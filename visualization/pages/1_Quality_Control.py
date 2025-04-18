@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import uuid
-from visualization.src.filesystem import FileSystem
+from src.filesystem import FileSystem
 
 st.set_page_config(
     page_title="Quality Control - Brieflow Analysis",
@@ -13,6 +13,18 @@ st.set_page_config(
 st.title("Quality Control")
 st.markdown("Review the quality control metrics from the brieflow pipeline")
 
+@st.cache_data
+def load_data(root_dir):
+    global filtered_df
+    # Apply filters directly during file discovery for better performance
+    # Filter for dir_level_0 in ['phenotype', 'merge', 'sbs', 'aggregate'] and dir_level_1 == 'eval'
+    files = FileSystem.find_eval_files(
+        root_dir, 
+        include_any=['phenotype', 'merge', 'sbs', 'aggregate'],
+        include_all=['eval']
+    )
+    filtered_df = FileSystem.extract_features(root_dir, files)
+    return filtered_df
 
 
 def create_filter_radio(df, column, container, label=None):
@@ -60,45 +72,28 @@ def apply_filter(df, column, selected_value):
 
 # Configuration
 ROOT_DIR = os.getenv('BRIEFLOW_ANALYSIS_ROOT', '../analysis_root')
-SIDE_BAR_FILTERS = True
 
 # Load the data
-files = FileSystem.find_eval_files(ROOT_DIR)
-df = FileSystem.extract_features(ROOT_DIR, files)  # Uses default omit_folders={'eval'}
+filtered_df = load_data(ROOT_DIR)
 
-# Apply filters to the dataframe
-filtered_df = df.copy()
-
-# Filter for valid dir_level_0 values
-valid_level_0 = ['phenotype', 'merge', 'sbs', 'aggregate']
-filtered_df = filtered_df[filtered_df['dir_level_0'].isin(valid_level_0)]
-
-
-# Create columns for filters
-if SIDE_BAR_FILTERS:
-    st.sidebar.title("Filters")
-    col1 = st.sidebar
-    col2 = st.sidebar
-    col3 = st.sidebar
-    col4 = st.sidebar
-    col5 = st.sidebar
-else:
-    col1, col2, col3, col4, col5 = st.columns(5)
+st.sidebar.title("Filters")
 
 # Create filters using the helper function
-selected_dir_level_0 = create_filter_radio(filtered_df, 'dir_level_0', col1)
+selected_dir_level_0 = create_filter_radio(filtered_df, 'dir_level_0', st.sidebar, "Phase")
 filtered_df = apply_filter(filtered_df, 'dir_level_0', selected_dir_level_0)
 
-selected_dir_level_1 = create_filter_radio(filtered_df, 'dir_level_1', col2)
-filtered_df = apply_filter(filtered_df, 'dir_level_1', selected_dir_level_1)
+# dir_level_1 is always "eval", so we don't need to create a filter
 
-selected_plate = create_filter_radio(filtered_df, 'plate_id', col3, "Filter by plate")
+selected_dir_level_2 = create_filter_radio(filtered_df, 'dir_level_2', st.sidebar, "Subgroup")
+filtered_df = apply_filter(filtered_df, 'dir_level_2', selected_dir_level_2)
+
+selected_plate = create_filter_radio(filtered_df, 'plate_id', st.sidebar, "Plate")
 filtered_df = apply_filter(filtered_df, 'plate_id', selected_plate)
 
-selected_well = create_filter_radio(filtered_df, 'well_id', col4, "Filter by well")
+selected_well = create_filter_radio(filtered_df, 'well_id', st.sidebar, "Well")
 filtered_df = apply_filter(filtered_df, 'well_id', selected_well)
 
-selected_metric = create_filter_radio(filtered_df, 'metric_name', col5, "Filter by metric")
+selected_metric = create_filter_radio(filtered_df, 'metric_name', st.sidebar, "Metric")
 filtered_df = apply_filter(filtered_df, 'metric_name', selected_metric)
 
 # Display the filtered dataframe (debug)
