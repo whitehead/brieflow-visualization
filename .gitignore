@@ -1,3 +1,4 @@
 analysis_root
 tags
 venv
+__pycache__
