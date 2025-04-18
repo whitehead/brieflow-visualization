@@ -15,7 +15,8 @@ st.title("Cluster Analysis")
 @st.cache_data
 def load_cluster_data():
     # Find all relevant TSV files
-    tsv_files = glob.glob("../analysis_root/cluster/**/*__phate_leiden_uniprot.tsv", recursive=True)
+    analysis_root = os.getenv('BRIEFLOW_ANALYSIS_ROOT', '../analysis_root')
+    tsv_files = glob.glob(f"{analysis_root}/cluster/**/*__phate_leiden_uniprot.tsv", recursive=True)
     
     # Initialize empty list to store dataframes
     dfs = []

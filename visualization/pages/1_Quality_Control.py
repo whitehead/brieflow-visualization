@@ -130,10 +130,6 @@ def extract_features(root_dir, files, omit_folders=None):
     return pd.DataFrame(features)
 
 
-ROOT_DIR = "../analysis_root"
-files = find_eval_files(ROOT_DIR)
-df = extract_features(ROOT_DIR, files)  # Uses default omit_folders={'eval'}
-
 def create_filter_radio(df, column, container, label=None):
     """
     Create a radio button for filtering based on a column.
@@ -175,6 +171,16 @@ def apply_filter(df, column, selected_value):
         return df[df[column] == selected_value]
     return df
 
+
+
+# Configuration
+ROOT_DIR = os.getenv('BRIEFLOW_ANALYSIS_ROOT', '../analysis_root')
+SIDE_BAR_FILTERS = True
+
+# Load the data
+files = find_eval_files(ROOT_DIR)
+df = extract_features(ROOT_DIR, files)  # Uses default omit_folders={'eval'}
+
 # Apply filters to the dataframe
 filtered_df = df.copy()
 
@@ -184,7 +190,6 @@ filtered_df = filtered_df[filtered_df['dir_level_0'].isin(valid_level_0)]
 
 
 # Create columns for filters
-SIDE_BAR_FILTERS = True
 if SIDE_BAR_FILTERS:
     st.sidebar.title("Filters")
     col1 = st.sidebar

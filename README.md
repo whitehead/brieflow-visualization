@@ -20,13 +20,16 @@ This project provides a Streamlit-based interface for interactive exploration of
    ```sh
    ./setup-venv.sh
    ```
-2. Ensure `analysis_root/` points to your analysis results
-   ```sh
-   ln -s /path/to/analysis_root analysis_root
-   ```
+2. Configure the analysis root directory:
+   - Option 1: Set the `BRIEFLOW_ANALYSIS_ROOT` environment variable
+     ```sh
+     export BRIEFLOW_ANALYSIS_ROOT=/path/to/analysis_root
+     ```
+   - Option 2: Create a symlink (if environment variable is not set)
+     ```sh
+     ln -s /path/to/analysis_root analysis_root
+     ```
 
 ## Running
 4. Run the app:
-   ```sh
-   ./run-visualization.sh
    ```
