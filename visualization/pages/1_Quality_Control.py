@@ -197,3 +197,5 @@ filtered_df = apply_filter(filtered_df, 'metric_name', selected_metric)
 
 # Display the filtered dataframe
 st.dataframe(filtered_df)
+
+
