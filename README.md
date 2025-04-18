@@ -16,7 +16,7 @@ This project provides a Streamlit-based interface for interactive exploration of
 
 ## Setup
 
-1. Create and activate a virtual environment
+1. Create virtual environment and install dependencies
    ```sh
    ./setup-venv.sh
    ```
@@ -32,4 +32,6 @@ This project provides a Streamlit-based interface for interactive exploration of
 
 ## Running
 4. Run the app:
+   ```
+   ./run-visualization.sh
    ```
