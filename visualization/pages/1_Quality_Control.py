@@ -176,6 +176,11 @@ def apply_filter(df, column, selected_value):
 # Apply filters to the dataframe
 filtered_df = df.copy()
 
+# Filter for valid dir_level_0 values
+valid_level_0 = ['phenotype', 'merge', 'sbs']
+filtered_df = filtered_df[filtered_df['dir_level_0'].isin(valid_level_0)]
+
+
 # Create columns for filters
 col1, col2, col3, col4, col5 = st.columns(5)
 
@@ -195,7 +200,7 @@ filtered_df = apply_filter(filtered_df, 'well_id', selected_well)
 selected_metric = create_filter_radio(filtered_df, 'metric_name', col5, "Filter by metric")
 filtered_df = apply_filter(filtered_df, 'metric_name', selected_metric)
 
-# Display the filtered dataframe
+# Display the filtered dataframe (debug)
 # st.dataframe(filtered_df)
 
 # Group by directory and basename
