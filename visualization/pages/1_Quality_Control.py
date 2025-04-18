@@ -10,6 +10,7 @@ st.set_page_config(
     layout="wide",
 )
 
+st.title("Quality Control")
 st.markdown("Review the quality control metrics from the brieflow pipeline")
 
 
