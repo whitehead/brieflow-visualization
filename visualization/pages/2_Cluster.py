@@ -6,8 +6,7 @@ import plotly.express as px
 
 st.set_page_config(
     page_title="Cluster Analysis - Brieflow Analysis",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="wide"
 )
 
 st.title("Cluster Analysis")
