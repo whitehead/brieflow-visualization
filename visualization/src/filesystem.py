@@ -9,24 +9,28 @@ class FileSystem:
     """
 
     @staticmethod
-    def find_eval_files(root_dir, include_any=None, include_all=None):
+    def find_files(root_dir, include_any=None, include_all=None, extensions=None):
         """
-        Find all PNG and TSV files in the directory tree with optional path filtering.
-
+        Find all files with specified extensions in the directory tree with optional path filtering.
+    
         Args:
             root_dir: The root directory to search in
             includes_any: List of strings where if the path includes any of the values, it is included
             include_all: List of strings where the path must include each and every element
-
+            extensions: List of file extensions to search for (default: ['png', 'tsv'])
+    
         Returns:
             A list of file paths that match the filtering criteria
         """
-        # Find all PNG and TSV files in the directory tree
-        png_files = glob.glob(f"{root_dir}/**/*.png", recursive=True)
-        tsv_files = glob.glob(f"{root_dir}/**/*.tsv", recursive=True)
+        # Use default extensions if none provided
+        if extensions is None:
+            extensions = ['png', 'tsv']
 
-        # Combine the lists
-        all_files = png_files + tsv_files
+        # Find all files with specified extensions
+        all_files = []
+        for ext in extensions:
+            files = glob.glob(f"{root_dir}/**/*.{ext}", recursive=True)
+            all_files.extend(files)
 
         # Apply filtering if specified
         filtered_files = all_files

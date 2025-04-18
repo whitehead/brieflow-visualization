@@ -18,10 +18,11 @@ def load_data(root_dir):
     global filtered_df
     # Apply filters directly during file discovery for better performance
     # Filter for dir_level_0 in ['phenotype', 'merge', 'sbs', 'aggregate'] and dir_level_1 == 'eval'
-    files = FileSystem.find_eval_files(
+    files = FileSystem.find_files(
         root_dir, 
         include_any=['phenotype', 'merge', 'sbs', 'aggregate'],
-        include_all=['eval']
+        include_all=['eval'],
+        extensions=['png', 'tsv']
     )
     filtered_df = FileSystem.extract_features(root_dir, files)
     return filtered_df
