@@ -3,13 +3,22 @@ import pandas as pd
 import glob
 import os
 import plotly.express as px
+import plotly.graph_objects as go
 
-st.set_page_config(
-    page_title="Cluster Analysis - Brieflow Analysis",
-    layout="wide"
-)
+# =====================
+# CONSTANTS
 
-st.title("Cluster Analysis")
+# Common hover data columns
+HOVER_COLUMNS = ['gene_symbol_0', 'cluster', 'Gene Names', 'source']
+
+# Indices for accessing customdata array
+GENE_SYMBOL_INDEX = 0
+CLUSTER_INDEX = 1
+GENE_NAMES_INDEX = 2
+SOURCE_INDEX = 3
+
+# =====================
+# FUNCTIONS
 
 # Load and merge cluster TSV files
 @st.cache_data
@@ -18,47 +27,176 @@ def load_cluster_data():
     analysis_root = os.getenv('BRIEFLOW_ANALYSIS_ROOT', '../analysis_root')
     tsv_files = glob.glob(f"{analysis_root}/cluster/**/*__phate_leiden_uniprot.tsv", recursive=True)
     
-    # Initialize empty list to store dataframes
-    dfs = []
-    
     # Read each file and add source attribute
+    dfs = []
     for file_path in tsv_files:
-        # Get the base name of the file (without extension)
         base_name = os.path.splitext(os.path.basename(file_path))[0]
-        
-        # Read the TSV file
         df = pd.read_csv(file_path, sep='\t')
-        
-        # Add source column
         df['source'] = base_name
-        
         dfs.append(df)
     
     # Concatenate all dataframes
-    if dfs:
-        combined_df = pd.concat(dfs, ignore_index=True)
-        return combined_df
-    else:
-        return pd.DataFrame()
+    return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+
+# Create a scatter plot with consistent settings
+def create_scatter_plot(data, color_column, color_discrete_sequence, color_discrete_map=None):
+    fig = px.scatter(
+        data,
+        x='PHATE_0',
+        y='PHATE_1',
+        color=color_column,
+        hover_data=HOVER_COLUMNS,
+        title='PHATE Visualization',
+        width=1000,
+        height=800,
+        color_discrete_sequence=color_discrete_sequence,
+        color_discrete_map=color_discrete_map or {}
+    )
+    
+    # Apply hover template to all traces
+    for trace in fig.data:
+        trace.hovertemplate = (
+            "PHATE_0=%{x}<br>"
+            "PHATE_1=%{y}<br>"
+            f"gene_symbol_0=%{{customdata[{GENE_SYMBOL_INDEX}]}}<br>"
+            f"cluster=%{{customdata[{CLUSTER_INDEX}]}}<br>"
+            f"Gene Names=%{{customdata[{GENE_NAMES_INDEX}]}}<br>"
+            f"source=%{{customdata[{SOURCE_INDEX}]}}<br>"
+            "<extra></extra>"
+        )
+    
+    return fig
+
+# Extract item value from selected point
+def get_item_value_from_point(selected_point, groupby_column):
+    # Get value from customdata which contains the hover_data values
+    if 'customdata' in selected_point and len(selected_point['customdata']) > 0:
+        if groupby_column in HOVER_COLUMNS:
+            col_index = HOVER_COLUMNS.index(groupby_column)
+            if col_index < len(selected_point['customdata']):
+                return str(selected_point['customdata'][col_index])
+    
+    # Fallback to legendgroup as a last resort (for compatibility)
+    if 'legendgroup' in selected_point:
+        return selected_point['legendgroup']
+        
+    return None
+
+# Helper function to create a scatter trace
+def make_scatter_trace(x, y, marker, text, customdata, name, showlegend, color=None):
+    hovertemplate = (
+        "PHATE_0=%{x}<br>"
+        "PHATE_1=%{y}<br>"
+        f"gene_symbol_0=%{{customdata[{GENE_SYMBOL_INDEX}]}}<br>"
+        f"cluster=%{{customdata[{CLUSTER_INDEX}]}}<br>"
+        f"Gene Names=%{{customdata[{GENE_NAMES_INDEX}]}}<br>"
+        f"source=%{{customdata[{SOURCE_INDEX}]}}<br>"
+        "<extra></extra>"
+    )
+    # Optionally override color in marker
+    if color is not None:
+        marker = dict(marker, color=color)
+    return go.Scattergl(
+        x=x,
+        y=y,
+        mode='markers',
+        marker=marker,
+        text=text,
+        customdata=customdata,
+        name=name,
+        hovertemplate=hovertemplate,
+        showlegend=showlegend,
+    )
+
+# =====================
+# MAIN CODE
+
+st.set_page_config(
+    page_title="Cluster Analysis - Brieflow Analysis",
+    layout="wide"
+)
+
+st.title("Cluster Analysis")
+
+# Initialize session state for selected item and grouping column if they don't exist
+if 'selected_item' not in st.session_state:
+    st.session_state.selected_item = None
+
+if 'groupby_column' not in st.session_state:
+    st.session_state.groupby_column = 'cluster'
 
 # Load the data
 cluster_data = load_cluster_data()
 
 # Display the data
 if not cluster_data.empty:
-    # Create scatter plot
-    fig = px.scatter(
-        cluster_data,
-        x='PHATE_0',
-        y='PHATE_1',
-        color='source',
-        hover_data=['gene_symbol_0', 'cluster', 'Gene Names'],
-        title='PHATE Visualization',
-        width=1000,
-        height=800
-    )
+    # Create a sidebar with controls
+    with st.sidebar:
+        # Dropdown to select the grouping column
+        available_columns = ['source', 'cluster']
+        # Add any other numeric or categorical columns that might be useful for grouping
+        for col in cluster_data.columns:
+            if col not in available_columns and cluster_data[col].nunique() < 30:
+                available_columns.append(col)
+        
+        selected_column = st.selectbox(
+            "Group by column", 
+            available_columns, 
+            index=available_columns.index(st.session_state.groupby_column)
+        )
+        
+        # Update session state if the grouping column has changed
+        if selected_column != st.session_state.groupby_column:
+            st.session_state.groupby_column = selected_column
+            st.session_state.selected_item = None  # Reset selection when changing grouping
+            st.rerun()
+        
+        # Show selected item and clear button if an item is selected
+        if st.session_state.selected_item:
+            st.write(f"Selected {st.session_state.groupby_column}: {st.session_state.selected_item}")
+            if st.button("Clear Selection"):
+                st.session_state.selected_item = None
+                st.rerun()
     
-    # Update layout for better visualization
+    # Always treat grouping column as categorical for discrete color maps
+    if st.session_state.groupby_column in cluster_data.columns:
+        cluster_data[st.session_state.groupby_column] = cluster_data[st.session_state.groupby_column].astype(str)
+    
+    # Build a color map using the group names and the color palette
+    group_names = cluster_data[st.session_state.groupby_column].unique()
+    palette = px.colors.qualitative.Plotly
+    color_map = {group: palette[i % len(palette)] for i, group in enumerate(group_names)}
+
+    # Always compute selected_data and other_data
+    selected_item = st.session_state.get("selected_item", None)
+    groupby_column = st.session_state.groupby_column
+    selected_data = cluster_data[cluster_data[groupby_column].astype(str) == str(selected_item)]
+    other_data = cluster_data[cluster_data[groupby_column].astype(str) != str(selected_item)]
+
+    # Use plotly.graph_objects for full control
+    fig = go.Figure()
+
+    # Plot each group as its own trace so all appear in the legend
+    for group in group_names:
+        group_df = cluster_data[cluster_data[groupby_column] == group]
+        marker=dict(
+            color=color_map[group],
+            size=10 if selected_item == group else 8,
+            opacity=1.0 if (selected_item is None or selected_item == group) else 0.3,
+        )
+        if selected_item == group:
+            marker['line'] = dict(width=2, color='black')
+        fig.add_trace(make_scatter_trace(
+            x=group_df['PHATE_0'],
+            y=group_df['PHATE_1'],
+            marker=marker,
+            text=group_df['gene_symbol_0'],
+            customdata=group_df[HOVER_COLUMNS],
+            name=str(group),
+            showlegend=True,
+        ))
+
+    # Update layout
     fig.update_layout(
         hovermode='closest',
         showlegend=True,
@@ -68,13 +206,35 @@ if not cluster_data.empty:
             y=1.02,
             xanchor="right",
             x=1
-        )
+        ),
+        title='PHATE Visualization',
+        width=1000,
+        height=800,
     )
+
+    # Display the plot with click event handling
+    event = st.plotly_chart(fig, use_container_width=True, key="cluster_plot", on_select="rerun")
     
-    # Display the plot
-    st.plotly_chart(fig, use_container_width=True)
+    # Handle click events
+    if event.selection and event.selection.points:
+        selected_point = event.selection.points[0]
+        
+        # Get the item value from the selected point
+        item_value = get_item_value_from_point(selected_point, st.session_state.groupby_column)
+        
+        # Update session state if the item has changed
+        if item_value and st.session_state.selected_item != item_value:
+            st.session_state.selected_item = item_value
+            st.rerun()
     
+    # Display data overview
     st.write("Cluster Data Overview")
-    st.dataframe(cluster_data)
+    
+    # If an item is selected, filter the dataframe
+    if st.session_state.selected_item:
+        filtered_data = cluster_data[cluster_data[st.session_state.groupby_column] == st.session_state.selected_item]
+        st.dataframe(filtered_data)
+    else:
+        st.dataframe(cluster_data)
 else:
-    st.write("No cluster data files found.") 
+    st.write("No cluster data files found.")
