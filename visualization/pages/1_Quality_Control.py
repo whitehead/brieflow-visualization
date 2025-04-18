@@ -185,7 +185,7 @@ df = extract_features(ROOT_DIR, files)  # Uses default omit_folders={'eval'}
 filtered_df = df.copy()
 
 # Filter for valid dir_level_0 values
-valid_level_0 = ['phenotype', 'merge', 'sbs']
+valid_level_0 = ['phenotype', 'merge', 'sbs', 'aggregate']
 filtered_df = filtered_df[filtered_df['dir_level_0'].isin(valid_level_0)]
 
 
