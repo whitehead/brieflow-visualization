@@ -355,7 +355,20 @@ with col1:
     selected_dir_level_0 = create_filter_radio(filtered_df, 'dir_level_0', st.sidebar, "Channel Combo", include_all=False)
     filtered_df = apply_filter(filtered_df, 'dir_level_0', selected_dir_level_0)
 
-    selected_dir_level_1 = create_filter_radio(filtered_df, 'dir_level_1', st.sidebar, "Cell Class", include_all=False)
+    # Initialize cell_class in session state if it doesn't exist
+    if 'cell_class' not in st.session_state:
+        st.session_state.cell_class = filtered_df['dir_level_1'].unique()[0] if len(filtered_df['dir_level_1'].unique()) > 0 else 'all'
+
+    # Get sorted unique values for cell class
+    cell_class_options = sorted(filtered_df['dir_level_1'].unique())
+
+    # Create the radio button with the session state value
+    selected_dir_level_1 = st.sidebar.radio(
+        "Cell Class",
+        cell_class_options,
+        index=cell_class_options.index(st.session_state.cell_class) if st.session_state.cell_class in cell_class_options else 0
+    )
+    st.session_state.cell_class = selected_dir_level_1
     filtered_df = apply_filter(filtered_df, 'dir_level_1', selected_dir_level_1)
 
     #selected_dir_level_2 = create_filter_radio(filtered_df, 'dir_level_2', st.sidebar, "C")
@@ -432,6 +445,8 @@ def display_gene_montages(gene_montages_root, gene):
 with col2:
     # Selected Gene info
     st.write("Selected Gene Cluster Info")
+    cell_class = st.session_state.get("cell_class", 'all')
+    st.write(f"Cell Class: {cell_class}")
 
 
     if 'selected_item' in st.session_state:
@@ -440,11 +455,12 @@ with col2:
         if selected_item:
             selected_gene_info_df = cluster_data[cluster_data[groupby_column] == selected_item]
             #st.dataframe(selected_gene_info_df)
-            gene_montages_root = os.path.join(ANALYSIS_ROOT, "aggregate", 'montages', f"{selected_dir_level_1}__montages")
+            gene_montages_root = os.path.join(ANALYSIS_ROOT, "aggregate", 'montages', f"{cell_class}__montages")
 
             # Check if gene_montages_root directory exists
             if os.path.exists(gene_montages_root):
                 genes = selected_gene_info_df['gene_symbol_0'].tolist()
+                st.write(f"{len(genes)} Genes")
                 for gene in genes:
                     with st.expander(gene, expanded=False):
                         display_gene_montages(gene_montages_root, gene)
