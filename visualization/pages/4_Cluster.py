@@ -126,12 +126,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize session state for selected item and grouping column if they don't exist
-if 'selected_item' not in st.session_state:
-    st.session_state.selected_item = None
-
-if 'groupby_column' not in st.session_state:
-    st.session_state.groupby_column = 'cluster'
 
 
 
@@ -316,6 +310,12 @@ def load_plots_and_tables_data():
     filtered_df = FileSystem.extract_features(cluster_plots_dir, cluster_plot_files)
     return filtered_df, cluster_plots_dir
 
+# Initialize session state for selected item and grouping column if they don't exist
+if 'selected_item' not in st.session_state:
+    st.session_state.selected_item = None
+
+if 'groupby_column' not in st.session_state:
+    st.session_state.groupby_column = 'cluster'
 
 st.title("Cluster Analysis")
 # Load the data
@@ -352,3 +352,22 @@ with col1:
 with col2:
     # Selected Gene info
     st.write("Selected Gene Cluster Info")
+
+
+    if 'selected_item' in st.session_state:
+        selected_item = st.session_state.get("selected_item", None)
+        groupby_column = st.session_state.get("groupby_column", None)
+        if selected_item:
+            selected_gene_info_df = cluster_data[cluster_data[groupby_column] == selected_item]
+            #selected_gene_info_df = filtered_df[filtered_df['gene_symbol_0'] == selected_item]
+            st.dataframe(selected_gene_info_df)
+            genes = selected_gene_info_df['gene_symbol_0'].tolist()
+            for gene in genes:
+                with st.expander(gene, expanded=False):
+                    st.write(f"Gene: {gene}")
+        else:
+            st.write("No group selected.")
+    else:
+        st.write("No group selected.")
+
+
