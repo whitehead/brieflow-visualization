@@ -2,8 +2,12 @@ import streamlit as st
 import pandas as pd
 import glob
 import os
+
 import plotly.express as px
 import plotly.graph_objects as go
+
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
 from src.filesystem import FileSystem
 from src.rendering import VisualizationRenderer
@@ -170,9 +174,25 @@ if not cluster_data.empty:
     
     # Build a color map using the group names and the color palette
     group_names = cluster_data[st.session_state.groupby_column].unique()
-    palette = px.colors.qualitative.Plotly
-    color_map = {group: palette[i % len(palette)] for i, group in enumerate(group_names)}
-
+    
+    # Create a color palette optimized for visibility on a black background
+    def get_optimized_color_palette(num_colors):
+        
+        # Use a perceptually uniform colormap that works well on dark backgrounds
+        # Options: 'viridis', 'plasma', 'inferno', 'magma', 'cividis'
+        colormap_name = 'nipy_spectral'  # Good visibility on dark backgrounds
+        
+        # Get evenly spaced colors from the colormap
+        cmap = plt.get_cmap(colormap_name)
+        colors = [mcolors.rgb2hex(cmap(i / (num_colors - 1 if num_colors > 1 else 1))) 
+                 for i in range(num_colors)]
+        
+        return colors
+    
+    # Get enough colors for all groups
+    optimized_palette = get_optimized_color_palette(len(group_names))
+    color_map = {group: optimized_palette[i] for i, group in enumerate(group_names)}
+    
     # Always compute selected_data and other_data
     selected_item = st.session_state.get("selected_item", None)
     groupby_column = st.session_state.groupby_column
