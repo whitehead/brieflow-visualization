@@ -183,25 +183,64 @@ if not cluster_data.empty:
     fig = go.Figure()
 
     # Plot each group as its own trace so all appear in the legend
-    for group in group_names:
-        group_df = cluster_data[cluster_data[groupby_column] == group]
-        marker=dict(
-            color=color_map[group],
-            size=10 if selected_item == group else 8,
-            opacity=1.0 if (selected_item is None or selected_item == group) else 0.3,
-        )
-        if selected_item == group:
-            marker['line'] = dict(width=2, color='black')
-        fig.add_trace(make_scatter_trace(
-            x=group_df['PHATE_0'],
-            y=group_df['PHATE_1'],
-            marker=marker,
-            text=group_df['gene_symbol_0'],
-            customdata=group_df[HOVER_COLUMNS],
-            name=str(group),
-            showlegend=True,
-        ))
-
+    # First phase: Add unselected points (all in gray)
+    if selected_item is not None:
+        for group in group_names:
+            if group != selected_item:
+                group_df = cluster_data[cluster_data[groupby_column] == group]
+                marker = dict(
+                    color='gray',  # All unselected points are gray
+                    size=8,
+                    opacity=0.3,
+                )
+                fig.add_trace(make_scatter_trace(
+                    x=group_df['PHATE_0'],
+                    y=group_df['PHATE_1'],
+                    marker=marker,
+                    text=group_df['gene_symbol_0'],
+                    customdata=group_df[HOVER_COLUMNS],
+                    name=str(group),
+                    showlegend=True,
+                ))
+        
+        # Second phase: Add selected points on top
+        for group in group_names:
+            if group == selected_item:
+                group_df = cluster_data[cluster_data[groupby_column] == group]
+                marker = dict(
+                    color=color_map[group],
+                    size=10,
+                    opacity=1.0,
+                    line=dict(width=2, color='black')
+                )
+                fig.add_trace(make_scatter_trace(
+                    x=group_df['PHATE_0'],
+                    y=group_df['PHATE_1'],
+                    marker=marker,
+                    text=group_df['gene_symbol_0'],
+                    customdata=group_df[HOVER_COLUMNS],
+                    name=str(group),
+                    showlegend=True,
+                ))
+    else:
+        # No selection: add all points with their original colors
+        for group in group_names:
+            group_df = cluster_data[cluster_data[groupby_column] == group]
+            marker = dict(
+                color=color_map[group],
+                size=8,
+                opacity=1.0,
+            )
+            fig.add_trace(make_scatter_trace(
+                x=group_df['PHATE_0'],
+                y=group_df['PHATE_1'],
+                marker=marker,
+                text=group_df['gene_symbol_0'],
+                customdata=group_df[HOVER_COLUMNS],
+                name=str(group),
+                showlegend=True,
+            ))
+    
     # Update layout
     fig.update_layout(
         hovermode='closest',
@@ -213,7 +252,7 @@ if not cluster_data.empty:
             xanchor="right",
             x=1
         ),
-        title='PHATE Visualization',
+        title='',
         width=1000,
         height=800,
     )
