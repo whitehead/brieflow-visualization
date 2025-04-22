@@ -314,9 +314,10 @@ def load_plots_and_tables_data():
     # Files with dir_level_1='plots' contain cell class information in their basename as DT-{cell_class}__.
     # For example: 'DT-mitotic__some_other_info.png' should have dir_level_1='mitotic'.
     # This code extracts the cell class from the basename and updates dir_level_1 accordingly.
-    mask = filtered_df['dir_level_1'] == 'plots'
-    extracted_values = filtered_df.loc[mask, 'basename'].str.extract('DT-(\w+)__', expand=False)
-    filtered_df.loc[mask, 'dir_level_1'] = extracted_values
+    if 'dir_level_1' in filtered_df.columns:
+        mask = filtered_df['dir_level_1'] == 'plots'
+        extracted_values = filtered_df.loc[mask, 'basename'].str.extract(r'DT-(\w+)__', expand=False)
+        filtered_df.loc[mask, 'dir_level_1'] = extracted_values
 
     return filtered_df, cluster_plots_dir
 
@@ -366,10 +367,13 @@ with col1:
 
     # Initialize cell_class in session state if it doesn't exist
     if 'cell_class' not in st.session_state:
-        st.session_state.cell_class = filtered_df['dir_level_1'].unique()[0] if len(filtered_df['dir_level_1'].unique()) > 0 else 'all'
+        if 'dir_level_1' in filtered_df.columns and len(filtered_df['dir_level_1'].unique()) > 0:
+            st.session_state.cell_class = filtered_df['dir_level_1'].unique()[0]
+        else:
+            st.session_state.cell_class = 'all'
 
     # Get sorted unique values for cell class
-    cell_class_options = sorted(filtered_df['dir_level_1'].unique())
+    cell_class_options = sorted(filtered_df['dir_level_1'].unique()) if 'dir_level_1' in filtered_df.columns else ['all']
 
     # Create the radio button with the session state value
     selected_dir_level_1 = st.sidebar.radio(
@@ -436,7 +440,7 @@ def display_gene_montages(gene_montages_root, gene):
                     selected_guide,
                     f"overlay__montage.tiff"
                 )
-                
+
                 if os.path.exists(overlay_tiff_path):
                     with open(overlay_tiff_path, 'rb') as f:
                         st.download_button(
