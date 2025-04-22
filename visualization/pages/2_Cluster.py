@@ -262,7 +262,7 @@ filtered_df, cluster_plots_dir = load_plots_and_tables_data()
 selected_dir_level_0 = create_filter_radio(filtered_df, 'dir_level_0', st.sidebar, "A")
 filtered_df = apply_filter(filtered_df, 'dir_level_0', selected_dir_level_0)
 
-selected_dir_level_1 = create_filter_radio(filtered_df, 'dir_level_1', st.sidebar, "B")
+selected_dir_level_1 = create_filter_radio(filtered_df, 'dir_level_1', st.sidebar, "B", include_all=False)
 filtered_df = apply_filter(filtered_df, 'dir_level_1', selected_dir_level_1)
 
 #selected_dir_level_2 = create_filter_radio(filtered_df, 'dir_level_2', st.sidebar, "C")
