@@ -309,6 +309,15 @@ def load_plots_and_tables_data():
     cluster_plot_files = FileSystem.find_files(cluster_plots_dir, include_all=['plots'], extensions=['png', 'tsv'])
 
     filtered_df = FileSystem.extract_features(cluster_plots_dir, cluster_plot_files)
+
+    # Data Cleanup: Some files have a special naming pattern that needs to be normalized.
+    # Files with dir_level_1='plots' contain cell class information in their basename as DT-{cell_class}__.
+    # For example: 'DT-mitotic__some_other_info.png' should have dir_level_1='mitotic'.
+    # This code extracts the cell class from the basename and updates dir_level_1 accordingly.
+    mask = filtered_df['dir_level_1'] == 'plots'
+    extracted_values = filtered_df.loc[mask, 'basename'].str.extract('DT-(\w+)__', expand=False)
+    filtered_df.loc[mask, 'dir_level_1'] = extracted_values
+
     return filtered_df, cluster_plots_dir
 
 @st.cache_data
