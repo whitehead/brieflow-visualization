@@ -1,9 +1,9 @@
 import pytest
 from streamlit.testing.v1 import AppTest
 
-def test_home_page_loads():
-    """Test that the Home page loads without errors."""
-    at = AppTest.from_file("Home.py")
+def test_overview_page_loads():
+    """Test that the Overview page loads without errors."""
+    at = AppTest.from_file("Overview.py")
     at.run(timeout=10)
     
     # Verify no exceptions occurred

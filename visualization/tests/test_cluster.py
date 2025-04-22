@@ -102,7 +102,7 @@ def test_cluster_page_loads():
     # Generate and write test data
     test_data_file = write_test_cluster_data()
     
-    at = AppTest.from_file("pages/2_Cluster.py")
+    at = AppTest.from_file("pages/4_Cluster.py")
     at.run(timeout=10)
     
     # Verify no exceptions occurred
