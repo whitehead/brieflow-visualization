@@ -1,13 +1,20 @@
 import pytest
 import os
+import sys
 import pandas as pd
 import numpy as np
 import random
 import string
+from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
+# Add the visualization directory to the Python path
+visualization_dir = str(Path(__file__).parent.parent)
+if visualization_dir not in sys.path:
+    sys.path.insert(0, visualization_dir)
+
 # Set the analysis root directory for testing
-os.environ["BRIEFLOW_ANALYSIS_ROOT"] = "test/fixtures/analysis_root"
+os.environ["BRIEFLOW_ANALYSIS_ROOT"] = "tests/fixtures/analysis_root"
 
 def generate_random_gene_name():
     """Generate a random gene name that looks like a real one."""
@@ -77,32 +84,52 @@ def generate_test_cluster_data(n_rows=100):
         'Function': functions,
         'KEGG': kegg_ids,
         'ComplexPortal': complex_portal,
-        'STRING': string_ids
+        'STRING': string_ids,
+        'source': ['test_data'] * n_rows
     }
     
     return pd.DataFrame(data)
 
-def write_test_cluster_data(n_rows=100, output_dir="test/fixtures/analysis_root"):
-    """Generate and write test cluster data to a file."""
-    # Create the cluster directory structure
-    cluster_dir = os.path.join(output_dir, "cluster")
-    os.makedirs(cluster_dir, exist_ok=True)
+def create_test_plots_data():
+    """Create test data for plots and tables visualization."""
+    # Create test files
+    plots_dir = "tests/fixtures/analysis_root/cluster/plots"
+    os.makedirs(plots_dir, exist_ok=True)
     
-    # Generate the test data
-    df = generate_test_cluster_data(n_rows)
+    # Create a test PNG file
+    test_png = os.path.join(plots_dir, "test_plot.png")
+    with open(test_png, "wb") as f:
+        f.write(b"fake png data")
     
-    # Write to TSV file with the required naming convention
-    output_file = os.path.join(cluster_dir, "test_data__phate_leiden_uniprot.tsv")
-    df.to_csv(output_file, sep='\t', index=False)
+    # Create a test TSV file
+    test_tsv = os.path.join(plots_dir, "test_data.tsv")
+    pd.DataFrame({
+        'Column1': [1, 2, 3],
+        'Column2': ['A', 'B', 'C']
+    }).to_csv(test_tsv, sep='\t', index=False)
     
-    return output_file
+    return [test_png, test_tsv]
+
+def setup_test_data():
+    """Set up all test data needed for the cluster page."""
+    # Create cluster data
+    cluster_data = generate_test_cluster_data()
+    cluster_file = "tests/fixtures/analysis_root/cluster/test_data__phate_leiden_uniprot.tsv"
+    os.makedirs(os.path.dirname(cluster_file), exist_ok=True)
+    cluster_data.to_csv(cluster_file, sep='\t', index=False)
+    
+    # Create plots and tables data
+    plot_files = create_test_plots_data()
+    
+    return cluster_file, plot_files
 
 def test_cluster_page_loads():
-    """Test that the Cluster Analysis page loads without errors."""
-    # Generate and write test data
-    test_data_file = write_test_cluster_data()
+    """Test that the Cluster page loads without errors."""
+    # Set up test data
+    cluster_file, plot_files = setup_test_data()
     
-    at = AppTest.from_file("pages/4_Cluster.py")
+    # Run the test
+    at = AppTest.from_file("../pages/4_Cluster.py")
     at.run(timeout=10)
     
     # Verify no exceptions occurred
