@@ -438,7 +438,7 @@ def display_gene_montages(gene_montages_root, gene):
                     gene_montages_root,
                     gene,
                     selected_guide,
-                    f"overlay__montage.tiff"
+                    f"overlay_montage.tiff"
                 )
 
                 if os.path.exists(overlay_tiff_path):
