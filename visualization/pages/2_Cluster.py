@@ -180,7 +180,7 @@ if not cluster_data.empty:
         
         # Use a perceptually uniform colormap that works well on dark backgrounds
         # Options: 'viridis', 'plasma', 'inferno', 'magma', 'cividis'
-        colormap_name = 'nipy_spectral'  # Good visibility on dark backgrounds
+        colormap_name = 'turbo'  # Good visibility on dark backgrounds
         
         # Get evenly spaced colors from the colormap
         cmap = plt.get_cmap(colormap_name)
