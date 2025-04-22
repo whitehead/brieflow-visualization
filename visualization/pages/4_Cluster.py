@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import glob
 import os
+import uuid
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -36,7 +37,7 @@ SOURCE_INDEX = 3
 def load_cluster_data():
     # Find all relevant TSV files
     tsv_files = glob.glob(f"{ANALYSIS_ROOT}/cluster/**/*__phate_leiden_uniprot.tsv", recursive=True)
-    
+
     # Read each file and add source attribute
     dfs = []
     for file_path in tsv_files:
@@ -44,7 +45,7 @@ def load_cluster_data():
         df = pd.read_csv(file_path, sep='\t')
         df['source'] = base_name
         dfs.append(df)
-    
+
     # Concatenate all dataframes
     return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
 
@@ -62,7 +63,7 @@ def create_scatter_plot(data, color_column, color_discrete_sequence, color_discr
         color_discrete_sequence=color_discrete_sequence,
         color_discrete_map=color_discrete_map or {}
     )
-    
+
     # Apply hover template to all traces
     for trace in fig.data:
         trace.hovertemplate = (
@@ -74,7 +75,7 @@ def create_scatter_plot(data, color_column, color_discrete_sequence, color_discr
             f"source=%{{customdata[{SOURCE_INDEX}]}}<br>"
             "<extra></extra>"
         )
-    
+
     return fig
 
 # Extract item value from selected point
@@ -85,11 +86,11 @@ def get_item_value_from_point(selected_point, groupby_column):
             col_index = HOVER_COLUMNS.index(groupby_column)
             if col_index < len(selected_point['customdata']):
                 return str(selected_point['customdata'][col_index])
-    
+
     # Fallback to legendgroup as a last resort (for compatibility)
     if 'legendgroup' in selected_point:
         return selected_point['legendgroup']
-        
+
     return None
 
 # Helper function to create a scatter trace
@@ -310,6 +311,25 @@ def load_plots_and_tables_data():
     filtered_df = FileSystem.extract_features(cluster_plots_dir, cluster_plot_files)
     return filtered_df, cluster_plots_dir
 
+@st.cache_data
+def load_montage_data(root_dir, gene_name):
+    # Find all montage files
+    files = FileSystem.find_files(
+        root_dir + "/" + gene_name,
+        include_all=['montages'],
+        extensions=['png']
+    )
+
+    # Extract features from the file paths
+    filtered_df = FileSystem.extract_features(root_dir, files)
+
+    # Add additional columns based on the file path structure
+    filtered_df['gene'] = filtered_df['file_path'].apply(lambda x: x.split('/')[-3])
+    filtered_df['guide'] = filtered_df['file_path'].apply(lambda x: x.split('/')[-2])
+    filtered_df['channel'] = filtered_df['file_path'].apply(lambda x: x.split('/')[-1].split('__')[0])
+
+    return filtered_df
+
 # Initialize session state for selected item and grouping column if they don't exist
 if 'selected_item' not in st.session_state:
     st.session_state.selected_item = None
@@ -349,6 +369,66 @@ with col1:
 
     VisualizationRenderer.display_plots_and_tables(filtered_df, cluster_plots_dir)
 
+
+def display_gene_montages(gene_montages_root, gene):
+    gene_dir = os.path.join(gene_montages_root, gene)
+    if not os.path.exists(gene_dir):
+        st.warning(f"No montage directory found for gene {gene}")
+    else:
+        montage_data = load_montage_data(gene_montages_root, gene)
+        if montage_data.empty:
+            st.write(f"No montage data found for gene {gene}")
+        else:
+            # Add filters for guide and channel
+            available_guides = sorted(montage_data['guide'].unique())
+            selected_guide = st.selectbox(
+                "Select Guide",
+                available_guides,
+                index=0,
+                key=f"guide_{gene}_{uuid.uuid4()}"
+            )
+
+            # Filter the data based on selections
+            filtered_montage_data = montage_data[
+                (montage_data['guide'] == selected_guide)
+                ]
+
+            if len(filtered_montage_data) > 0:
+                # Display each image in the filtered data
+                for _, row in filtered_montage_data.iterrows():
+                    # Construct the full path including the montages directory
+                    image_path = os.path.join(gene_montages_root, row['file_path'])
+
+                    try:
+                        if os.path.exists(image_path):
+                            st.image(image_path, caption=f"{gene} - {selected_guide} - {row['channel']}")
+                        else:
+                            st.error(f"Image file not found: {image_path}")
+                    except Exception as e:
+                        st.error(f"Error displaying image: {str(e)}")
+
+                # Add download button for overlay TIFF
+                overlay_tiff_path = os.path.join(
+                    gene_montages_root,
+                    gene,
+                    selected_guide,
+                    f"overlay__montage.tiff"
+                )
+                
+                if os.path.exists(overlay_tiff_path):
+                    with open(overlay_tiff_path, 'rb') as f:
+                        st.download_button(
+                            label="Download Overlay TIFF",
+                            data=f,
+                            file_name=f"{gene}_{selected_guide}_{row['channel']}_overlay.tiff",
+                            key=f"download_{gene}_{selected_guide}_{row['channel']}_{uuid.uuid4()}"
+                        )
+                else:
+                    st.warning(f"No overlay tiff found: {overlay_tiff_path}")
+            else:
+                st.warning(f"No image found for {gene} - {selected_guide}")
+
+
 with col2:
     # Selected Gene info
     st.write("Selected Gene Cluster Info")
@@ -359,15 +439,21 @@ with col2:
         groupby_column = st.session_state.get("groupby_column", None)
         if selected_item:
             selected_gene_info_df = cluster_data[cluster_data[groupby_column] == selected_item]
-            #selected_gene_info_df = filtered_df[filtered_df['gene_symbol_0'] == selected_item]
-            st.dataframe(selected_gene_info_df)
-            genes = selected_gene_info_df['gene_symbol_0'].tolist()
-            for gene in genes:
-                with st.expander(gene, expanded=False):
-                    st.write(f"Gene: {gene}")
+            #st.dataframe(selected_gene_info_df)
+            gene_montages_root = os.path.join(ANALYSIS_ROOT, "aggregate", 'montages', f"{selected_dir_level_1}__montages")
+
+            # Check if gene_montages_root directory exists
+            if os.path.exists(gene_montages_root):
+                genes = selected_gene_info_df['gene_symbol_0'].tolist()
+                for gene in genes:
+                    with st.expander(gene, expanded=False):
+                        display_gene_montages(gene_montages_root, gene)
+                        # Download overlay.
+            else:
+                st.warning(f"⚠️ WARNING: Gene montages root directory does not exist: {gene_montages_root}")
+
+
         else:
             st.write("No group selected.")
     else:
         st.write("No group selected.")
-
-
