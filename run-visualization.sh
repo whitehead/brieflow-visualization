@@ -10,4 +10,4 @@ export STREAMLIT_CONFIG=".streamlit/config.toml"
 
 # Start Streamlit server, force bind to 0.0.0.0
 cd visualization
-exec streamlit run Home.py --server.address=0.0.0.0 "$@"
+exec streamlit run Overview.py --server.address=0.0.0.0 "$@"
