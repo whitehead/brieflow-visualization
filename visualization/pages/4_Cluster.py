@@ -344,6 +344,9 @@ with col1:
     # selected_metric = create_filter_radio(filtered_df, 'metric_name', st.sidebar, "Metric")
     # filtered_df = apply_filter(filtered_df, 'metric_name', selected_metric)
 
+    selected_lr = create_filter_radio(filtered_df, 'leiden_resolution', st.sidebar, "Leiden Resolution", include_all=False)
+    filtered_df = apply_filter(filtered_df, 'leiden_resolution', selected_lr)
+
     VisualizationRenderer.display_plots_and_tables(filtered_df, cluster_plots_dir)
 
 with col2:

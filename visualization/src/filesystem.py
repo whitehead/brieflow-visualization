@@ -12,13 +12,13 @@ class FileSystem:
     def find_files(root_dir, include_any=None, include_all=None, extensions=None):
         """
         Find all files with specified extensions in the directory tree with optional path filtering.
-    
+
         Args:
             root_dir: The root directory to search in
             includes_any: List of strings where if the path includes any of the values, it is included
             include_all: List of strings where the path must include each and every element
             extensions: List of file extensions to search for (default: ['png', 'tsv'])
-    
+
         Returns:
             A list of file paths that match the filtering criteria
         """
@@ -93,6 +93,20 @@ class FileSystem:
         return None
 
     @staticmethod
+    def extract_leiden_resolution(file_path):
+        r"""
+        Extract Leiden resolution (format: LR-\d+) from a file path.
+
+        Args:
+            file_path: Path to the file
+
+        Returns:
+            Leiden resolution if found, None otherwise
+        """
+        match = re.search(r'(LR-\d+)', file_path)
+        return match.group(1) if match else None
+
+    @staticmethod
     def extract_features(root_dir, files):
         """
         Extract features from PNG and TSV files including path information.
@@ -126,6 +140,7 @@ class FileSystem:
             feature['well_id'] = FileSystem.extract_well_id(rel_path)
             feature['plate_id'] = FileSystem.extract_plate_id(rel_path)
             feature['metric_name'] = FileSystem.extract_metric_name(rel_path)
+            feature['leiden_resolution'] = FileSystem.extract_leiden_resolution(rel_path)
 
             # Add directory levels, skipping omitted folders
             parts = dirname.split(os.sep)
