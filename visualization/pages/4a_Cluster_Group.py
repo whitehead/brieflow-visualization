@@ -47,6 +47,7 @@ def load_cluster_data():
         base_name = os.path.splitext(os.path.basename(file_path))[0]
         df = pd.read_csv(file_path, sep='\t')
         df['source'] = base_name
+        df['leiden_resolution'] = FileSystem.extract_leiden_resolution(rel_path)
         parts = dirname.split(os.sep)
         for i, part in enumerate(parts):
             df[f'dir_level_{i}'] = part
@@ -518,6 +519,9 @@ selected_cell_class = st.sidebar.radio(
 )
 cluster_data = apply_filter(cluster_data, 'dir_level_1', selected_cell_class)
 st.session_state.cell_class = selected_cell_class
+
+selected_lr = create_filter_radio(cluster_data, 'leiden_resolution', st.sidebar, "Leiden Resolution", include_all=False)
+cluster_data = apply_filter(cluster_data, 'leiden_resolution', selected_lr)
 
 # Create two columns for the main content
 col1, col2 = st.columns([1,1])
