@@ -511,6 +511,13 @@ st.title("Cluster Analysis")
 
 # Add cell class filter in the sidebar
 st.sidebar.title("Filters")
+
+
+# Channel Combo
+selected_dir_level_0 = create_filter_radio(cluster_data, 'dir_level_0', st.sidebar, "Channel Combo", include_all=False)
+cluster_data = apply_filter(cluster_data, 'dir_level_0', selected_dir_level_0)
+
+# Cell Class
 cell_class_options = ['all', 'mitotic', 'interphase']  # Add default options
 selected_cell_class = st.sidebar.radio(
     "Cell Class",
@@ -520,6 +527,7 @@ selected_cell_class = st.sidebar.radio(
 cluster_data = apply_filter(cluster_data, 'dir_level_1', selected_cell_class)
 st.session_state.cell_class = selected_cell_class
 
+# Leiden Resolution
 selected_lr = create_filter_radio(cluster_data, 'leiden_resolution', st.sidebar, "Leiden Resolution", include_all=False)
 cluster_data = apply_filter(cluster_data, 'leiden_resolution', selected_lr)
 
