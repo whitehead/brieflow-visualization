@@ -35,18 +35,25 @@ SOURCE_INDEX = 3
 # Load and merge cluster TSV files
 @st.cache_data
 def load_cluster_data():
-    # Find all relevant TSV files
-    tsv_files = glob.glob(f"{ANALYSIS_ROOT}/cluster/**/*__phate_leiden_clustering.tsv", recursive=True)
+    cluster_root = os.path.join(ANALYSIS_ROOT, 'cluster')
+    tsv_files = glob.glob(f"{cluster_root}/**/*__phate_leiden_clustering.tsv", recursive=True)
 
-    # Read each file and add source attribute
     dfs = []
     for file_path in tsv_files:
+        rel_path = os.path.relpath(file_path, cluster_root)
+        dirname = os.path.dirname(rel_path)
         base_name = os.path.splitext(os.path.basename(file_path))[0]
         df = pd.read_csv(file_path, sep='\t')
+        # Add source attribute for provinance
         df['source'] = base_name
+        # Add leiden resolution attribute for filtering
+        df['leiden_resolution'] = FileSystem.extract_leiden_resolution(file_path)
+        # Add directory levels for filtering
+        parts = dirname.split(os.sep)
+        for i, part in enumerate(parts):
+            df[f'dir_level_{i}'] = part
         dfs.append(df)
 
-    # Concatenate all dataframes
     return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
 
 # Create a scatter plot with consistent settings
@@ -348,22 +355,21 @@ if 'groupby_column' not in st.session_state:
     st.session_state.groupby_column = 'cluster'
 
 st.title("Cluster Analysis")
+
+
 # Load the data
 col1, col2 = st.columns([3,2])
 
 with col1:
-    # Cluster plot
     cluster_data = load_cluster_data()
-    display_cluster(cluster_data)
-
-    # Other Plots and tables
-    st.write("Plots and Tables")
-    st.sidebar.title("Filters")
 
     filtered_df, cluster_plots_dir = load_plots_and_tables_data()
 
+    st.sidebar.title("Filters")
     selected_dir_level_0 = create_filter_radio(filtered_df, 'dir_level_0', st.sidebar, "Channel Combo", include_all=False)
     filtered_df = apply_filter(filtered_df, 'dir_level_0', selected_dir_level_0)
+    cluster_data = apply_filter(cluster_data, 'dir_level_0', selected_dir_level_0)
+
 
     # Initialize cell_class in session state if it doesn't exist
     if 'cell_class' not in st.session_state:
@@ -383,6 +389,7 @@ with col1:
     )
     st.session_state.cell_class = selected_dir_level_1
     filtered_df = apply_filter(filtered_df, 'dir_level_1', selected_dir_level_1)
+    cluster_data = apply_filter(cluster_data, 'dir_level_1', selected_dir_level_1)
 
     #selected_dir_level_2 = create_filter_radio(filtered_df, 'dir_level_2', st.sidebar, "C")
     #filtered_df = apply_filter(filtered_df, 'dir_level_2', selected_dir_level_2)
@@ -392,7 +399,11 @@ with col1:
 
     selected_lr = create_filter_radio(filtered_df, 'leiden_resolution', st.sidebar, "Leiden Resolution", include_all=False)
     filtered_df = apply_filter(filtered_df, 'leiden_resolution', selected_lr)
+    cluster_data = apply_filter(cluster_data, 'leiden_resolution', selected_lr)
 
+    display_cluster(cluster_data)
+
+    st.write("Plots and Tables")
     VisualizationRenderer.display_plots_and_tables(filtered_df, cluster_plots_dir)
 
 
