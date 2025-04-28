@@ -24,7 +24,7 @@ HOVER_COLUMNS = ['gene_symbol_0', 'cluster', 'cell_count', 'source']
 # Indices for accessing customdata array
 GENE_SYMBOL_INDEX = 0
 CLUSTER_INDEX = 1
-CELL_COUNTS_INDEX = 2
+CELL_COUNT_INDEX = 2
 SOURCE_INDEX = 3
 
 # =====================
@@ -36,14 +36,20 @@ SOURCE_INDEX = 3
 @st.cache_data
 def load_cluster_data():
     # Find all relevant TSV files
-    tsv_files = glob.glob(f"{ANALYSIS_ROOT}/cluster/**/*__phate_leiden_clustering.tsv", recursive=True)
+    cluster_root = os.path.join(ANALYSIS_ROOT, 'cluster')
+    tsv_files = glob.glob(f"{cluster_root}/**/*__phate_leiden_clustering.tsv", recursive=True)
 
     # Read each file and add source attribute
     dfs = []
     for file_path in tsv_files:
+        rel_path = os.path.relpath(file_path, cluster_root)
+        dirname = os.path.dirname(rel_path)
         base_name = os.path.splitext(os.path.basename(file_path))[0]
         df = pd.read_csv(file_path, sep='\t')
         df['source'] = base_name
+        parts = dirname.split(os.sep)
+        for i, part in enumerate(parts):
+            df[f'dir_level_{i}'] = part
         dfs.append(df)
 
     # Concatenate all dataframes
@@ -71,7 +77,7 @@ def create_scatter_plot(data, color_column, color_discrete_sequence, color_discr
             "PHATE_1=%{y}<br>"
             f"gene_symbol_0=%{{customdata[{GENE_SYMBOL_INDEX}]}}<br>"
             f"cluster=%{{customdata[{CLUSTER_INDEX}]}}<br>"
-            f"cell counts=%{{customdata[{CELL_COUNTS_INDEX}]}}<br>"
+            f"cell_count=%{{customdata[{CELL_COUNT_INDEX}]}}<br>"
             f"source=%{{customdata[{SOURCE_INDEX}]}}<br>"
             "<extra></extra>"
         )
@@ -100,7 +106,7 @@ def make_scatter_trace(x, y, marker, text, customdata, name, showlegend, color=N
         "PHATE_1=%{y}<br>"
         f"gene_symbol_0=%{{customdata[{GENE_SYMBOL_INDEX}]}}<br>"
         f"cluster=%{{customdata[{CLUSTER_INDEX}]}}<br>"
-        f"cell counts=%{{customdata[{CELL_COUNTS_INDEX}]}}<br>"
+        f"cell_count=%{{customdata[{CELL_COUNT_INDEX}]}}<br>"
         f"source=%{{customdata[{SOURCE_INDEX}]}}<br>"
         "<extra></extra>"
     )
@@ -260,9 +266,9 @@ def display_cluster(cluster_data, container=st.container()):
             # Dropdown to select the grouping column
             available_columns = ['source', 'cluster']
             # Add any other numeric or categorical columns that might be useful for grouping
-            for col in cluster_data.columns:
-                if col not in available_columns and cluster_data[col].nunique() < 30:
-                    available_columns.append(col)
+            # for col in cluster_data.columns:
+            #     if col not in available_columns and cluster_data[col].nunique() < 30:
+            #         available_columns.append(col)
 
             selected_column = st.selectbox(
                 "Group by column",
@@ -510,6 +516,7 @@ selected_cell_class = st.sidebar.radio(
     cell_class_options,
     index=cell_class_options.index(st.session_state.cell_class) if st.session_state.cell_class in cell_class_options else 0
 )
+cluster_data = apply_filter(cluster_data, 'dir_level_1', selected_cell_class)
 st.session_state.cell_class = selected_cell_class
 
 # Create two columns for the main content
