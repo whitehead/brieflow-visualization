@@ -19,7 +19,7 @@ from src.filtering import create_filter_radio, apply_filter
 ANALYSIS_ROOT = os.getenv('BRIEFLOW_ANALYSIS_ROOT', '../analysis_root')
 
 # Common hover data columns
-HOVER_COLUMNS = ['gene_symbol_0', 'cluster', 'Gene Names', 'source']
+HOVER_COLUMNS = ['gene_symbol_0', 'cluster', 'source', 'cell_count']
 
 # Indices for accessing customdata array
 GENE_SYMBOL_INDEX = 0
@@ -36,7 +36,7 @@ SOURCE_INDEX = 3
 @st.cache_data
 def load_cluster_data():
     # Find all relevant TSV files
-    tsv_files = glob.glob(f"{ANALYSIS_ROOT}/cluster/**/*__phate_leiden_uniprot.tsv", recursive=True)
+    tsv_files = glob.glob(f"{ANALYSIS_ROOT}/cluster/**/*__phate_leiden_clustering.tsv", recursive=True)
 
     # Read each file and add source attribute
     dfs = []
