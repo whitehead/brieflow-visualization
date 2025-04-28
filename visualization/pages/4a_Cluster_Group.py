@@ -19,12 +19,12 @@ from src.filtering import create_filter_radio, apply_filter
 ANALYSIS_ROOT = os.getenv('BRIEFLOW_ANALYSIS_ROOT', '../analysis_root')
 
 # Common hover data columns
-HOVER_COLUMNS = ['gene_symbol_0', 'cluster', 'Gene Names', 'source']
+HOVER_COLUMNS = ['gene_symbol_0', 'cluster', 'cell_count', 'source']
 
 # Indices for accessing customdata array
 GENE_SYMBOL_INDEX = 0
 CLUSTER_INDEX = 1
-GENE_NAMES_INDEX = 2
+CELL_COUNTS_INDEX = 2
 SOURCE_INDEX = 3
 
 # =====================
@@ -36,7 +36,7 @@ SOURCE_INDEX = 3
 @st.cache_data
 def load_cluster_data():
     # Find all relevant TSV files
-    tsv_files = glob.glob(f"{ANALYSIS_ROOT}/cluster/**/*__phate_leiden_uniprot.tsv", recursive=True)
+    tsv_files = glob.glob(f"{ANALYSIS_ROOT}/cluster/**/*__phate_leiden_clustering.tsv", recursive=True)
 
     # Read each file and add source attribute
     dfs = []
@@ -71,7 +71,7 @@ def create_scatter_plot(data, color_column, color_discrete_sequence, color_discr
             "PHATE_1=%{y}<br>"
             f"gene_symbol_0=%{{customdata[{GENE_SYMBOL_INDEX}]}}<br>"
             f"cluster=%{{customdata[{CLUSTER_INDEX}]}}<br>"
-            f"Gene Names=%{{customdata[{GENE_NAMES_INDEX}]}}<br>"
+            f"cell counts=%{{customdata[{CELL_COUNTS_INDEX}]}}<br>"
             f"source=%{{customdata[{SOURCE_INDEX}]}}<br>"
             "<extra></extra>"
         )
@@ -100,7 +100,7 @@ def make_scatter_trace(x, y, marker, text, customdata, name, showlegend, color=N
         "PHATE_1=%{y}<br>"
         f"gene_symbol_0=%{{customdata[{GENE_SYMBOL_INDEX}]}}<br>"
         f"cluster=%{{customdata[{CLUSTER_INDEX}]}}<br>"
-        f"Gene Names=%{{customdata[{GENE_NAMES_INDEX}]}}<br>"
+        f"cell counts=%{{customdata[{CELL_COUNTS_INDEX}]}}<br>"
         f"source=%{{customdata[{SOURCE_INDEX}]}}<br>"
         "<extra></extra>"
     )
