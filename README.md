@@ -1,5 +1,10 @@
 # Brieflow Streamlit Visualization
 
+> [!WARNING] 
+> This repository was an experiment that has been merged into the main brieflow pipeline repository.  
+> https://github.com/cheeseman-lab/brieflow
+
+
 This project provides a Streamlit-based interface for interactive exploration of analysis results.
 
 ## Structure
